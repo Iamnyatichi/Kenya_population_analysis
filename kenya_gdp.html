@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kenya GDP Analysis</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
+    integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg=="
+    crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="kenya_gdp.js"></script>
+  <style>
+    body {
+      background-color: #99d8c9;
+    }
+
+    .heading {
+      margin: 10px 10px 0px 20px;
+      display: flex;
+      justify-content: space-between;
+      padding: 0;
+
+    }
+
+    .title {
+      font-weight: bolder;
+      font-size: 50px;
+      margin-top: 10px;
+      padding: 0px;
+      margin-bottom: 0px;
+    }
+
+    h2 {
+      font-size: 30px;
+      padding: 0px;
+      margin-top: 5px;
+      margin-bottom: 5px;
+    }
+
+    ul {
+      display: flex;
+      justify-content: center;
+    }
+
+    ul li {
+      text-decoration: none;
+      list-style: none;
+      padding: 0 20px 0 20px;
+      margin: 0;
+    }
+
+    ul li a {
+      display: block;
+      text-decoration: none;
+      font-size: 25px;
+      font-weight: bolder;
+      padding: 5px;
+    }
+
+    ul li a:hover {
+      border: 2px solid black;
+      text-decoration: none;
+      color: black;
+    }
+
+    /* add url from font awesome for icons  */
+
+    .social_links {
+      margin-top: 20px;
+    }
+
+    .social_links a {
+      text-decoration: none;
+      padding: 10px;
+      background-color: black;
+      border-radius: 50%;
+      font-size: 18px;
+    }
+
+    .social_links a:hover {
+      background-color: white;
+      transition: 0.5s;
+    }
+
+    .social_links a i {
+      font-size: 20px;
+      color: white;
+    }
+
+    .social_links a i:hover {
+      color: black;
+      transition: 0.5s;
+    }
+
+    #map {
+      position: absolute;
+      top: 200px;
+      bottom: 0;
+      left: 0;
+      right: 0;
+    }
+
+    .info {
+      padding: 6px 8px;
+      font: 14px / 16px Arial, Helvetica, sans - serif;
+      background: white;
+      background: rgba(255, 255, 255, 0.8);
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+      border-radius: 5px;
+    }
+
+    .info h4 {
+      margin: 0 0 5px;
+      color: #777;
+    }
+
+    .legend {
+      width: 100px;
+      /* legend width, remove if unnecessary*/
+      line-height: 18px;
+      color: #555;
+    }
+
+    .legend i {
+      width: 18px;
+      height: 18px;
+      float: left;
+      margin-right: 8px;
+      opacity: 0.7;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="heading">
+    <div class='intro'>
+      <h1 class='title'>Interactive Choropleth Maps</h1>
+      <h2>Kenya Counties GDP Analysis</h2>
+    </div>
+    <div class="social_links">
+      <a href="https://github.com/Iamnyatichi/Kenya_population_analysis" target="_blank"><i
+          class="fa-brands fa-square-github" aria-hidden="true"></i></a>
+      <a href="https://www.linkedin.com/in/theresa-monari-4a366527a/" target="_blank"><i
+          class="fa-brands fa-linkedin-in"></i></a>
+    </div>
+  </div>
+  <div class="pages">
+    <ul>
+      <li><a class="active" href="index.html" target="_self">Kenya</a></li>
+      <li><a href="us_population.html" target="_self">USA</a></li>
+      <li><a href="kenya_gdp.html" target="_self">Kenya GDP</a></li>
+    </ul>
+  </div>
+
+
+  <div id="map"></div>
+  <script>
+    var map = L.map('map').setView([0.0236, 37.9090], 6);
+
+    var tiles = L.tileLayer('https://api.maptiler.com/maps/openstreetmap/{z}/{x}/{y}.jpg?key=xWxBRTFAUoZnsgRnZQvA', {
+      attribution: '<a href="https://www.maptiler.com/copyright/" target="_blank">&copy; MapTiler</a> <a href="https://www.openstreetmap.org/copyright" target="_blank">&copy; OpenStreetMap contributors</a>',
+      maxZoom: 19
+    }).addTo(map);
+    // L.geoJson(data).addTo(map);
+
+    // control that shows county information on hover
+    const info = L.control();
+
+    info.onAdd = function (map) {
+      this._div = L.DomUtil.create('div', 'info');
+      this.update();
+      return this._div;
+    };
+
+    info.update = function (props) {
+      const contents = props ? `<b style='font-size:20px;color:blue'>${props.County}</b><br />  <b style='font-size:15px;color:green'>${props["GDP (Nominal) (US$ billion)"]} (US$ billion)</b> ` : '<span style="font-size:15px; color:black">Hover over a county!</span></b>'
+      this._div.innerHTML = `<h4 style='font-size:25px;color:black;'>County GDP (Nominal) (US$ billion)</h4>${contents}`;
+    };
+
+    info.addTo(map);
+
+
+    // Ading the colors based on the data
+    function getColor(d) {
+      return d > 3.57 ? '#00441b' :
+        d > 2.23 ? '#006d2c' :
+          d > 1.89 ? '#238b45' :
+            d > 1.67 ? '#41ab5d' :
+              d > 1.39 ? '#74c476' :
+                d > 1.19 ? '#a1d99b' :
+                  d > 0.99 ? '#c7e9c0' :
+                    d > 0.71 ? '#e5f5e0' : '#f7fcf5';
+    }
+
+    function style(feature) {
+      return {
+        fillColor: getColor(feature.properties["GDP (Nominal) (US$ billion)"]),
+        weight: 1,
+        opacity: 1,
+        color: 'black',
+        dashArray: '',
+        fillOpacity: 1
+      };
+    }
+    // update the control when the user hovers over a county 
+    function highlightFeature(e) {
+      const layer = e.target;
+
+      layer.setStyle({
+        weight: 3,
+        color: 'green',
+        dashArray: '',
+        fillOpacity: 0.7
+      });
+
+      layer.bringToFront();
+
+      info.update(layer.feature.properties);
+    }
+
+    /* The Kenya data*/
+    const geojson = L.geoJson(data, {
+      style,
+      onEachFeature
+    }).addTo(map);
+
+    function resetHighlight(e) {
+      geojson.resetStyle(e.target);
+      info.update();
+    }
+
+    function zoomToFeature(e) {
+      map.fitBounds(e.target.getBounds());
+    }
+
+    function onEachFeature(feature, layer) {
+      layer.on({
+        mouseover: highlightFeature,
+        mouseout: resetHighlight,
+        click: zoomToFeature
+      });
+    }
+
+    map.attributionControl.addAttribution('Population data &copy; <a href="https://www.citypopulation.de/">Citypopulation.de</a>');
+
+    // custom legend
+    var legend = L.control({ position: 'bottomright' });
+
+    legend.onAdd = function (map) {
+
+      var div = L.DomUtil.create('div', 'info legend'),
+        grades = [0.29, 0.71, 0.99, 1.19, 1.39, 1.67, 1.89, 2.23, 3.57],
+        labels = [];
+
+      // loop through our density intervals and generate a label with a colored square for each interval
+      for (var i = 0; i < grades.length; i++) {
+        div.innerHTML +=
+          '<i style="background:' + getColor(grades[i] + 1) + '"></i> ' +
+          grades[i] + (grades[i + 1] ? '&ndash;' + grades[i + 1] + '<br>' : '+');
+      }
+
+      return div;
+    };
+
+    legend.addTo(map);
+
+  </script>
+
+
+</body>
+
+</html>
